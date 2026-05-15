@@ -1,0 +1,298 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: chatbot_postgres
+    environment:
+      POSTGRES_DB: college_chatbot
+      POSTGRES_USER: chatbot_user
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot_user -d college_chatbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chatbot_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: chatbot_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chatbot_network
+
+  # Authentication Service
+  auth_service:
+    build:
+      context: .
+      dockerfile: auth_service/Dockerfile
+    container_name: chatbot_auth_service
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./auth_service:/app/auth_service
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Chat Service
+  chat_service:
+    build:
+      context: .
+      dockerfile: chat_service/Dockerfile
+    container_name: chatbot_chat_service
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./chat_service:/app/chat_service
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # RAG Pipeline Service
+  rag_service:
+    build:
+      context: .
+      dockerfile: rag_service/Dockerfile
+    container_name: chatbot_rag_service
+    ports:
+      - "8002:8002"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VECTOR_DB_PATH=/app/chroma_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./rag_service:/app/rag_service
+      - vector_db_data:/app/chroma_db
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Document Processing Service
+  document_service:
+    build:
+      context: .
+      dockerfile: document_service/Dockerfile
+    container_name: chatbot_document_service
+    ports:
+      - "8003:8003"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - UPLOAD_DIR=/app/uploads
+      - TEMP_DIR=/app/temp_files
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./document_service:/app/document_service
+      - upload_data:/app/uploads
+      - temp_data:/app/temp_files
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Notification Service
+  notification_service:
+    build:
+      context: .
+      dockerfile: notification_service/Dockerfile
+    container_name: chatbot_notification_service
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./notification_service:/app/notification_service
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Admin Service
+  admin_service:
+    build:
+      context: .
+      dockerfile: admin_service/Dockerfile
+    container_name: chatbot_admin_service
+    ports:
+      - "8005:8005"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./admin_service:/app/admin_service
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Analytics Service
+  analytics_service:
+    build:
+      context: .
+      dockerfile: analytics_service/Dockerfile
+    container_name: chatbot_analytics_service
+    ports:
+      - "8006:8006"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./analytics_service:/app/analytics_service
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Celery Worker (for async tasks)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: document_service/Dockerfile
+    container_name: chatbot_celery_worker
+    command: celery -A document_service.tasks worker --loglevel=info
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=college_chatbot
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.py:/app/config.py
+      - ./document_service:/app/document_service
+      - upload_data:/app/uploads
+      - temp_data:/app/temp_files
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+networks:
+  chatbot_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  vector_db_data:
+  upload_data:
+  temp_data:
