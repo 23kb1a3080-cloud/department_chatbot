@@ -1,89 +1,57 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
+dist/
+build/
 *.egg
-MANIFEST
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
-ENV/
-env.bak/
-venv.bak/
+.venv/
+.env/
 
-# PyCharm
-.idea/
-
-# VS Code
-.vscode/
-
-# Environment variables
+# Environment variables (keep .env.example, ignore actual .env)
 .env
-.env.local
-.env.*.local
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.hypothesis/
-
-# Docker
-*.pid
-*.seed
-*.pid.lock
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# Redis dump
-dump.rdb
-
-# Vector database storage
+# Downloaded ML models (large files)
 chroma_db/
-faiss_index/
+*.bin
+*.pt
+*.pth
+*.onnx
 
-# Uploaded files
-uploads/
-temp_files/
+# Downloaded PDFs
+data/raw/*.pdf
+academic_calendar.pdf
+discovered_pdf_*.pdf
+
+# Playwright browser binaries
+ms-playwright/
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb

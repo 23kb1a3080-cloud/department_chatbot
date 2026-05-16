@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-lite.txt .
+RUN pip install --no-cache-dir -r requirements-lite.txt
 
 # Copy application code
 COPY config.py .

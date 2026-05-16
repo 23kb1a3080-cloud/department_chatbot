@@ -1,0 +1,46 @@
+[
+  {
+    "tag": "p",
+    "content": "Student Login"
+  },
+  {
+    "tag": "a",
+    "content": "Forgot eMail Id?"
+  },
+  {
+    "tag": "a",
+    "content": "Forgot password?"
+  },
+  {
+    "tag": "a",
+    "content": "How to Create Student Account"
+  },
+  {
+    "tag": "a",
+    "content": "Create an New Student Account"
+  },
+  {
+    "tag": "a",
+    "content": "Faculty Login here"
+  },
+  {
+    "tag": "button",
+    "content": "Sign In"
+  },
+  {
+    "tag": "label",
+    "content": "Enter Reg.No."
+  },
+  {
+    "tag": "label",
+    "content": "Enter Password"
+  },
+  {
+    "tag": "body",
+    "content": "×\n I Year students are informed to submit their profiles. No need Registration required, direct Login to Reg. No. & password. After Login change your password.\n\nStudent Login\n\nEnter Reg.No.\nForgot eMail Id?\nEnter Password\nForgot password?\nClear\nSign In\n\n\nHow to Create Student Account\nCreate an New Student Account\nFaculty Login here\nfor any issues contact : Examination Section"
+  },
+  {
+    "tag": "title",
+    "content": "Login - Smart Campus"
+  }
+]

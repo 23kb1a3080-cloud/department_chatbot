@@ -1,0 +1,73 @@
+[
+  {
+    "name": "Dr Narayana Rao Appini",
+    "designation": "Head of the Department",
+    "specialization": "Computer Networks, Machine Learning",
+    "Qualification" : "2017-Ph.D-JNTU Ananthapur,2008-M.Tech-JNTU Ananthapur,2005-B.Tech-Narayana Engineering College-Gudur"
+  },
+  {
+    "name": "Prof Nataraja Suresh Myle",
+    "designation": "Professor",
+    "specialization": "Computer Science"
+  },
+  {
+    "name": "Mr Venkata Mahendra Tatiparthi",
+    "designation": "Associate Professor",
+    "specialization": "Computer Science"
+  },
+  {
+    "name": "Dr Lakshmana Rao B",
+    "designation": "Associate Professor",
+    "specialization": "Computer Science, Software Engineering"
+  },
+  {
+    "name": "Ms Manne Sujana",
+    "designation": "Assistant Professor",
+    "specialization": "AI, Deep Learning"
+  },
+  {
+    "name": "Mr Mekala Sivapratap Reddy",
+    "designation": "Assistant Professor",
+    "specialization": "Machine Learning, Social Networks, Security"
+  },
+  {
+    "name": "Mr Chiranjeevi S V",
+    "designation": "Assistant Professor",
+    "specialization": "Computer Organization, DBMS, DLD, CN"
+  },
+  {
+    "name": "Mrs Chandrakala Palem",
+    "designation": "Assistant Professor",
+    "specialization": "Computer Science"
+  },
+  {
+    "name": "Mr Venkateswarlu Avula",
+    "designation": "Assistant Professor",
+    "specialization": "Artificial Intelligence, enabling machines"
+  },
+  {
+    "name": "Dr Mamatha Sekireddy",
+    "designation": "Assistant Professor",
+    "specialization": "AI and DS Department"
+  },
+  {
+    "name": "Mrs Kalyani Bondu",
+    "designation": "Assistant Professor",
+    "specialization": "Software Engineering"
+  },
+  {
+    "name": "Ms Swarnalatha V",
+    "designation": "Assistant Professor",
+    "specialization": "Python Programming, Digital Logic Design, Programming"
+  },
+  {
+    "name": "Mr P PENCHALA PRASANTH",
+    "designation": "Assistant Professor",
+    "specialization": "Artificial Intelligence"
+  },
+  {
+    "name": "Mrs Pitti Jyothi",
+    "designation": "Assistant Professor",
+    "specialization": "Teaching expert with 7+ years of experience"
+  }
+]

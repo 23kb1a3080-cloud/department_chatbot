@@ -1,251 +1,157 @@
-# College Department AI Chatbot System
+# 🎓 NBKR Institute AI & DS Department Chatbot
 
-An enterprise-level intelligent conversational platform designed to serve college departments with comprehensive data integration, AI-powered analysis, and multi-user support.
+An intelligent chatbot for the **AI & Data Science Department** at NBKR Institute of Science & Technology, powered by **RAG (Retrieval-Augmented Generation)** + **NLP (spaCy)**.
 
-## Architecture
+---
 
-The system follows a microservice architecture with the following services:
+## 🚀 Tech Stack
 
-- **Authentication Service** (Port 8000): User authentication, authorization, and session management
-- **Chat Service** (Port 8001): Core chatbot functionality and conversation management
-- **RAG Pipeline Service** (Port 8002): Retrieval-Augmented Generation for intelligent responses
-- **Document Processing Service** (Port 8003): Document ingestion, processing, and knowledge base management
-- **Notification Service** (Port 8004): Multi-channel notification delivery and management
-- **Admin Service** (Port 8005): Administrative interface and system management
-- **Analytics Service** (Port 8006): System monitoring, metrics collection, and reporting
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | FastAPI + WebSocket |
+| **AI / RAG** | Sentence Transformers + FAISS |
+| **NLP** | spaCy (en_core_web_sm) |
+| **Vector DB** | ChromaDB |
+| **Web Scraping** | Playwright + BeautifulSoup |
+| **PDF Processing** | pdfplumber |
+| **Data Processing** | Pandas |
 
-## Technology Stack
+---
 
-- **Backend Framework**: FastAPI
-- **Database**: PostgreSQL 15
-- **Cache**: Redis 7
-- **Vector Database**: ChromaDB
-- **Task Queue**: Celery
-- **Containerization**: Docker & Docker Compose
-- **Orchestration**: Kubernetes (production)
+## ✨ Features
 
-## Prerequisites
+- 📅 **Timetable** — Section A/B/C/D weekly schedules in structured table format
+- 👥 **Faculty** — Numbered table with name, designation badge, specialization
+- 🔍 **RAG Search** — FAISS cosine similarity retrieval with confidence scoring
+- 🧠 **NLP Pipeline** — Lemmatisation, POS tagging, NER, query expansion
+- 🤷 **Honest fallback** — Says "I don't know" when confidence is low
+- 🕷️ **Web Scraping** — Playwright-based scrapers for live data collection
 
-- Python 3.11+
-- Docker and Docker Compose
-- PostgreSQL 15+ (if running locally without Docker)
-- Redis 7+ (if running locally without Docker)
+---
 
-## Quick Start
-
-### 1. Clone the Repository
+## 📦 Installation
 
 ```bash
-git clone <repository-url>
-cd college-ai-chatbot-system
+# 1. Clone the repository
+git clone https://github.com/23kb1a3080-cloud/department_chatbot.git
+cd department_chatbot
+
+# 2. Install dependencies
+pip install fastapi uvicorn sentence-transformers faiss-cpu spacy langchain chromadb
+pip install pandas pdfplumber playwright beautifulsoup4 requests
+
+# 3. Download spaCy model
+python -m spacy download en_core_web_sm
+
+# 4. Install Playwright browser
+python -m playwright install chromium
 ```
 
-### 2. Set Up Environment Variables
+---
+
+## ▶️ Run the Chatbot
 
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+python rag_chatbot.py
 ```
 
-### 3. Using Docker Compose (Recommended)
+Open your browser at: **http://localhost:8000**
+
+---
+
+## 🕷️ Scrape Fresh Data
 
 ```bash
-# Build and start all services
-docker-compose up --build
-
-# Run in detached mode
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
+# Run complete scraping pipeline
+python main_scraper.py
 ```
 
-### 4. Local Development Setup
+This will:
+1. Scrape faculty data from NBKR IRINS portal
+2. Scrape main website content
+3. Extract PDF documents
+4. Scrape student portal
+5. Clean and preprocess all data
+6. Build ChromaDB vector embeddings
 
-```bash
-# Create virtual environment
-python -m venv venv
+---
 
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On Unix or MacOS:
-source venv/bin/activate
+## 💬 Sample Queries
 
-# Install dependencies
-pip install -r requirements.txt
+| Query | Response |
+|-------|----------|
+| `Section A timetable` | Full week table for Section A only |
+| `Section B Monday` | Monday schedule for Section B |
+| `List all faculty` | Numbered table: Name, Designation, Specialization |
+| `Who is the HOD?` | Faculty card with full details |
+| `Who teaches Machine Learning?` | Filtered faculty table |
+| `How to check attendance?` | NBKR portal information |
+| `What is the capital of France?` | "I'm not sure — not related to AI&DS dept" |
 
-# Run database migrations (after setting up PostgreSQL)
-alembic upgrade head
+---
 
-# Run individual services
-python auth_service/main.py
-python chat_service/main.py
-python rag_service/main.py
-# ... etc
+## 📁 Project Structure
+
+```
+department_chatbot/
+├── rag_chatbot.py              # Main chatbot (RAG + NLP + FastAPI)
+├── main_scraper.py             # Complete scraping pipeline
+├── faculty_scraper.py          # Faculty data scraper (Playwright)
+├── website_scraper.py          # Main website scraper (Playwright)
+├── pdf_scraper.py              # PDF extractor (pdfplumber)
+├── portal_scraper.py           # Student portal scraper (Playwright)
+├── preprocess.py               # Data cleaning pipeline
+├── embeddings.py               # ChromaDB vector store builder
+├── chatbot_engine.py           # CLI chatbot for testing
+├── aids_faculty_data.json      # Faculty knowledge base
+├── aids_timetable_data.json    # Timetable data (Sections A-D)
+├── aids_faculty_kb.json        # Faculty Q&A knowledge base
+├── aids_timetable_kb.json      # Timetable Q&A knowledge base
+├── nbkr_knowledge_base.json    # NBKR services knowledge base
+└── data/                       # Scraped raw + cleaned data
 ```
 
-## Project Structure
+---
+
+## 🧠 How RAG Works
 
 ```
-college-ai-chatbot-system/
-├── auth_service/           # Authentication and authorization
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── chat_service/           # Chat functionality
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── rag_service/            # RAG pipeline
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── document_service/       # Document processing
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── notification_service/   # Notifications
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── admin_service/          # Admin interface
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── analytics_service/      # Analytics and monitoring
-│   ├── __init__.py
-│   ├── main.py
-│   └── Dockerfile
-├── config.py               # Configuration management
-├── requirements.txt        # Python dependencies
-├── docker-compose.yml      # Docker Compose configuration
-├── .env.example            # Environment variables template
-├── .gitignore              # Git ignore rules
-└── README.md               # This file
+User Query
+    ↓
+spaCy NLP Analysis
+(lemmatisation, NER, POS tagging, query expansion)
+    ↓
+FAISS Vector Search
+(cosine similarity on 384-dim embeddings)
+    ↓
+Top-K Document Retrieval
+    ↓
+Intent-Aware Answer Synthesis
+    ↓
+Structured HTML Response
 ```
 
-## Service Endpoints
+---
 
-Once running, services are available at:
+## 📊 Data Sources
 
-- Authentication Service: http://localhost:8000
-- Chat Service: http://localhost:8001
-- RAG Pipeline Service: http://localhost:8002
-- Document Processing Service: http://localhost:8003
-- Notification Service: http://localhost:8004
-- Admin Service: http://localhost:8005
-- Analytics Service: http://localhost:8006
+| Source | URL |
+|--------|-----|
+| Faculty | https://nbkrist.irins.org/faculty/index/Department+of++AI+and+DS |
+| Website | https://www.nbkrist.org/ |
+| PDF | https://nbkrist.org/Acdemic_calendar/ |
+| Portal | https://portal.nbkrsac.in/ |
 
-API documentation (Swagger UI) for each service:
-- http://localhost:8000/docs
-- http://localhost:8001/docs
-- ... etc
+---
 
-## Health Checks
+## 👨‍💻 Department
 
-Each service provides a health check endpoint:
+**AI & Data Science Department**  
+NBKR Institute of Science & Technology  
+Vidyanagar, Nellore District, Andhra Pradesh
 
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-# ... etc
-```
+---
 
-## Development
+## 📄 License
 
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=. --cov-report=html
-
-# Run specific test file
-pytest tests/test_auth.py
-```
-
-### Code Quality
-
-```bash
-# Format code
-black .
-
-# Sort imports
-isort .
-
-# Lint code
-flake8 .
-
-# Type checking
-mypy .
-```
-
-## Configuration
-
-Key configuration options in `.env`:
-
-- **Database**: PostgreSQL connection settings
-- **Redis**: Cache and session store settings
-- **Vector DB**: ChromaDB configuration
-- **Authentication**: JWT settings, password policies
-- **File Upload**: Size limits, allowed extensions
-- **AI/LLM**: OpenAI API key and model settings
-- **External APIs**: ERP, Notice Board, Attendance system integration
-
-## Deployment
-
-### Docker Compose (Development/Testing)
-
-```bash
-docker-compose up -d
-```
-
-### Kubernetes (Production)
-
-Kubernetes manifests will be created in subsequent tasks. The system is designed for horizontal scaling with:
-
-- Multiple replicas per service
-- Load balancing
-- Auto-scaling based on metrics
-- Zero-downtime deployments
-
-## Security
-
-- JWT-based authentication
-- Role-based access control (RBAC)
-- Password hashing with bcrypt
-- Rate limiting
-- Data encryption at rest and in transit
-- Security audit logging
-
-## Monitoring
-
-- Prometheus metrics collection
-- Grafana dashboards
-- Elasticsearch log aggregation
-- Health check endpoints
-- Performance monitoring
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Run tests and linting
-4. Submit a pull request
-
-## License
-
-[Your License Here]
-
-## Support
-
-For issues and questions, please contact [support contact].
+MIT License
