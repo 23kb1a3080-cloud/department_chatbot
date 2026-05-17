@@ -1057,7 +1057,9 @@ If I don't know something, I'll tell you honestly!</div></div>
   const msgs=document.getElementById('msgs'),inp=document.getElementById('inp'),st=document.getElementById('st');
 
   function connect(){
-    ws=new WebSocket('ws://localhost:8000/ws');
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = proto + '//' + location.host + '/ws';
+    ws=new WebSocket(wsUrl);
     ws.onopen=()=>{st.textContent='● Connected';st.className='status on'};
     ws.onclose=()=>{st.textContent='● Disconnected';st.className='status';setTimeout(connect,3000)};
     ws.onmessage=e=>{

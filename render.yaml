@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: nbkr-department-chatbot
+    runtime: python
+    buildCommand: >
+      pip install -r requirements.txt &&
+      python -m spacy download en_core_web_sm
+    startCommand: "uvicorn rag_chatbot:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    autoDeploy: true
