@@ -1255,12 +1255,29 @@ async def lifespan(app: FastAPI):
     load_circulars()
     ok = initialize_rag()
     print("✓ RAG ready" if ok else "⚠ RAG unavailable — check data files")
+    # Reload any admin-uploaded knowledge into FAISS
+    try:
+        from admin_panel import load_updates, chunk_text, add_to_live_index
+        updates = load_updates()
+        if updates:
+            total = 0
+            for u in updates:
+                text = u.get("text","")
+                if text:
+                    total += add_to_live_index(chunk_text(text), u)
+            print(f"✓ Admin updates reloaded: {len(updates)} entries, {total} vectors")
+    except Exception as e:
+        print(f"⚠ Admin updates reload skipped: {e}")
     print("=" * 70)
     yield
 
 app = FastAPI(title="NBKR RAG+NLP+ML Chatbot v6", version="6.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# ── Mount Admin Panel ─────────────────────────────────────────────────────────
+from admin_panel import admin_app
+app.mount("/admin", admin_app)
 
 
 @app.get("/")
