@@ -1141,6 +1141,96 @@ def _help_table() -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Admin in-chat session state
+# ─────────────────────────────────────────────────────────────────────────────
+import hashlib as _hashlib
+
+ADMIN_PASSWORD_HASH = _hashlib.sha256("nbkr@admin2026".encode()).hexdigest()
+
+# Per-connection admin state
+# States: None | "awaiting_password" | "authenticated" | "awaiting_title" | "awaiting_content"
+_admin_sessions: Dict[str, Dict] = {}
+
+def _admin_state(conn_id: str) -> Dict:
+    if conn_id not in _admin_sessions:
+        _admin_sessions[conn_id] = {"state": None, "title": "", "category": "general"}
+    return _admin_sessions[conn_id]
+
+def _reset_admin(conn_id: str):
+    _admin_sessions[conn_id] = {"state": None, "title": "", "category": "general"}
+
+def _add_knowledge_inline(title: str, content: str, category: str, added_by: str = "admin") -> str:
+    """Chunk, embed and add content to live FAISS. Returns status HTML."""
+    import re as _re
+    # Chunk
+    words  = content.split()
+    chunks, i = [], 0
+    while i < len(words):
+        chunk = " ".join(words[i:i+300])
+        if len(chunk.strip()) > 20:
+            chunks.append(chunk.strip())
+        i += 250  # 50-word overlap
+
+    if not chunks:
+        return _info_card("⚠️ Error", [("Issue", "Content too short to process.")])
+
+    added = 0
+    if embeddings_model and faiss_index is not None:
+        import numpy as _np
+        vecs = embeddings_model.encode(chunks, normalize_embeddings=True).astype("float32")
+        faiss_index.add(vecs)
+        for chunk in chunks:
+            knowledge_docs.append({
+                "text":     chunk,
+                "type":     category,
+                "title":    title,
+                "added_by": added_by,
+            })
+        added = len(chunks)
+
+    # Persist to knowledge_updates.json
+    import time as _t
+    uid = _hashlib.md5(f"{title}{_t.time()}".encode()).hexdigest()[:10]
+    entry = {
+        "id":       uid,
+        "title":    title,
+        "category": category,
+        "added_by": added_by,
+        "added_at": datetime.now().isoformat(),
+        "chunks":   len(chunks),
+        "text":     content[:5000],
+    }
+    updates = []
+    if os.path.exists("knowledge_updates.json"):
+        with open("knowledge_updates.json", encoding="utf-8") as f:
+            updates = json.load(f)
+    updates.append(entry)
+    with open("knowledge_updates.json", "w", encoding="utf-8") as f:
+        json.dump(updates, f, indent=2, ensure_ascii=False)
+
+    # Auto-summarize (top 3 sentences)
+    sentences = _re.split(r'(?<=[.!?])\s+', content.strip())
+    summary = " ".join(sentences[:3]) if sentences else content[:200]
+
+    return f"""
+<div style="font-family:'Segoe UI',sans-serif;margin:8px 0">
+  <div style="background:linear-gradient(135deg,#2e7d32,#388e3c);color:#fff;padding:10px 16px;border-radius:8px 8px 0 0">
+    <b>✅ Knowledge Base Updated Successfully</b>
+  </div>
+  <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#f1f8e9"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555;width:160px">📌 Title</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{title}</td></tr>
+      <tr><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">🏷️ Category</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{category}</td></tr>
+      <tr style="background:#f1f8e9"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">📊 Chunks</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{len(chunks)} text chunks processed</td></tr>
+      <tr><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">🧠 Vectors</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{added} vectors added to live FAISS index</td></tr>
+      <tr style="background:#f1f8e9"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">📝 Summary</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;color:#555">{summary[:300]}</td></tr>
+      <tr><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#2e7d32">⚡ Status</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;color:#2e7d32"><b>Live — chatbot can answer questions about this content immediately</b></td></tr>
+    </table>
+  </div>
+</div>"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Main response function
 # ─────────────────────────────────────────────────────────────────────────────
 def get_response(query: str, conn_id: str = "default") -> str:
@@ -1148,6 +1238,110 @@ def get_response(query: str, conn_id: str = "default") -> str:
     if not query:
         return _info_card("⚠️ Empty Query", [("Tip","Please type a question.")])
 
+    sess = _admin_state(conn_id)
+    q_lower = query.lower()
+
+    # ── ADMIN FLOW ────────────────────────────────────────────────────────
+
+    # Step 0: User types "admin" → ask for password
+    if q_lower in ("admin", "admin mode", "admin login") and sess["state"] is None:
+        sess["state"] = "awaiting_password"
+        return _info_card("🔐 Admin Mode", [
+            ("Status",   "Admin authentication required."),
+            ("Action",   "Please enter the admin password to continue."),
+        ])
+
+    # Step 1: Waiting for password
+    if sess["state"] == "awaiting_password":
+        entered_hash = _hashlib.sha256(query.encode()).hexdigest()
+        if entered_hash == ADMIN_PASSWORD_HASH:
+            sess["state"] = "authenticated"
+            return f"""
+<div style="font-family:'Segoe UI',sans-serif;margin:8px 0">
+  <div style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:10px 16px;border-radius:8px 8px 0 0">
+    <b>✅ Admin Mode Activated</b>
+  </div>
+  <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#e8eaf6"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#1a237e">What can I add?</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">Circulars, notices, policies, announcements, any text</td></tr>
+      <tr><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">Command</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">Type <b>add knowledge</b> to start adding content</td></tr>
+      <tr style="background:#e8eaf6"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">Exit</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">Type <b>exit admin</b> to return to normal mode</td></tr>
+    </table>
+  </div>
+</div>"""
+        else:
+            _reset_admin(conn_id)
+            return _info_card("❌ Wrong Password", [
+                ("Status",     "Authentication failed."),
+                ("Suggestion", "Type 'admin' again to retry."),
+            ])
+
+    # Step 2: Authenticated — handle admin commands
+    if sess["state"] == "authenticated":
+        if q_lower in ("exit admin", "exit", "logout", "quit admin"):
+            _reset_admin(conn_id)
+            return _info_card("👋 Admin Mode Ended", [
+                ("Status", "Returned to normal chatbot mode."),
+            ])
+
+        if q_lower in ("add knowledge", "add", "add content", "add data", "add notice",
+                       "add circular", "add announcement", "add text"):
+            sess["state"] = "awaiting_title"
+            return _info_card("📌 Step 1 of 2 — Enter Title", [
+                ("Instruction", "Type the <b>title</b> for this knowledge entry."),
+                ("Example",     "Fee Circular June 2026"),
+                ("Tip",         "Keep it short and descriptive."),
+            ])
+
+        # Show current FAISS status
+        if q_lower in ("status", "kb status", "knowledge status"):
+            return _info_card("📊 Knowledge Base Status", [
+                ("FAISS Vectors",  str(faiss_index.ntotal) if faiss_index else "0"),
+                ("Knowledge Docs", str(len(knowledge_docs))),
+                ("Circulars",      str(len(_CIRCULARS))),
+                ("Faculty",        str(len(_FACULTY_DATA))),
+                ("Admin Updates",  str(len(json.load(open("knowledge_updates.json",encoding="utf-8"))) if os.path.exists("knowledge_updates.json") else 0)),
+            ])
+
+        # Default admin help
+        return _info_card("🔐 Admin Mode — Commands", [
+            ("add knowledge", "Add new text/notice/circular to chatbot"),
+            ("status",        "Show knowledge base statistics"),
+            ("exit admin",    "Return to normal chatbot mode"),
+        ])
+
+    # Step 3: Waiting for title
+    if sess["state"] == "awaiting_title":
+        if not query.strip():
+            return _info_card("⚠️ Title Required", [("Tip", "Please type a title for this entry.")])
+        sess["title"] = query.strip()
+        sess["state"] = "awaiting_content"
+        return _info_card(f'📝 Step 2 of 2 — Enter Content', [
+            ("Title set",    sess["title"]),
+            ("Instruction",  "Now type or paste the <b>full content</b> you want to add."),
+            ("Tip",          "You can paste a full circular, notice, policy, or any text."),
+            ("Note",         "Press Enter/Send when done — the bot will process it instantly."),
+        ])
+
+    # Step 4: Waiting for content → process and add
+    if sess["state"] == "awaiting_content":
+        content = query.strip()
+        if len(content) < 10:
+            return _info_card("⚠️ Content Too Short", [
+                ("Tip", "Please paste the full content (at least a few sentences)."),
+            ])
+        title    = sess.get("title", "Admin Update")
+        category = sess.get("category", "general")
+        result   = _add_knowledge_inline(title, content, category)
+        # Back to authenticated state for more additions
+        sess["state"] = "authenticated"
+        sess["title"] = ""
+        return result + """
+<div style="font-family:'Segoe UI',sans-serif;margin-top:8px;padding:10px 14px;background:#e8eaf6;border-radius:8px;font-size:13px">
+  <b>Admin mode still active.</b> Type <b>add knowledge</b> to add more, or <b>exit admin</b> to return to normal mode.
+</div>"""
+
+    # ── NORMAL CHATBOT FLOW ───────────────────────────────────────────────
     qa     = analyse_query(query)
     intent = detect_intent(query, qa)
 
@@ -1255,29 +1449,12 @@ async def lifespan(app: FastAPI):
     load_circulars()
     ok = initialize_rag()
     print("✓ RAG ready" if ok else "⚠ RAG unavailable — check data files")
-    # Reload any admin-uploaded knowledge into FAISS
-    try:
-        from admin_panel import load_updates, chunk_text, add_to_live_index
-        updates = load_updates()
-        if updates:
-            total = 0
-            for u in updates:
-                text = u.get("text","")
-                if text:
-                    total += add_to_live_index(chunk_text(text), u)
-            print(f"✓ Admin updates reloaded: {len(updates)} entries, {total} vectors")
-    except Exception as e:
-        print(f"⚠ Admin updates reload skipped: {e}")
     print("=" * 70)
     yield
 
 app = FastAPI(title="NBKR RAG+NLP+ML Chatbot v6", version="6.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-# ── Mount Admin Panel ─────────────────────────────────────────────────────────
-from admin_panel import admin_app
-app.mount("/admin", admin_app)
 
 
 @app.get("/")
