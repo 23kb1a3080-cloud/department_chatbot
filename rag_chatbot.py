@@ -111,6 +111,17 @@ _TRAIN_DATA = [
     ("tell me about nbkr", "general"), ("about the college", "general"),
     ("nbkr institute", "general"), ("what is nbkr", "general"),
     ("college information", "general"), ("department info", "general"),
+    # circulars
+    ("circular", "circulars"), ("notice", "circulars"),
+    ("announcement", "circulars"), ("show circulars", "circulars"),
+    ("latest notice", "circulars"), ("recent circular", "circulars"),
+    ("fee notice", "circulars"), ("class commencement notice", "circulars"),
+    ("tuition fee circular", "circulars"), ("early bird offer", "circulars"),
+    ("btech classes start", "circulars"), ("when do classes start", "circulars"),
+    ("fee payment deadline", "circulars"), ("enrolment notice", "circulars"),
+    ("show announcements", "circulars"), ("any new notice", "circulars"),
+    ("college notice", "circulars"), ("notice board", "circulars"),
+    ("b-10/2026/01", "circulars"), ("iii iv btech notice", "circulars"),
 ]
 
 def train_ml_classifier():
@@ -234,14 +245,20 @@ def detect_intent(query: str, qa: QueryAnalysis) -> str:
 
     # Rule-based fallback using NLP signals
     q = query.lower()
+    circular_signals = {"circular","notice","announcement","fee","enrolment",
+                        "commencement","early bird","btech","b.tech"}
     timetable_lemmas = {"timetable","schedule","class","period","timing","slot","lecture"}
     faculty_lemmas   = {"faculty","professor","hod","head","teacher","lecturer",
                         "instructor","staff","doctor","dr","mr","mrs","ms","prof"}
     service_lemmas   = {"attendance","journal","portal","intranet","assessment",
-                        "exam","fee","hostel","admission","placement","library",
+                        "exam","hostel","admission","placement","library",
                         "result","mark","grade"}
 
     signals = set(qa.intent_signals + qa.tokens)
+    if (signals & circular_signals
+            or any(w in q for w in ["circular","notice","announcement","fee notice",
+                                    "early bird","class start","commencement","enrolment"])):
+        return "circulars"
     if signals & timetable_lemmas or any(w in q for w in ["timetable","schedule","time table"]):
         return "timetable"
     if (signals & faculty_lemmas or qa.question_type == "who"
@@ -257,12 +274,20 @@ def detect_intent(query: str, qa: QueryAnalysis) -> str:
 # Faculty data
 # ─────────────────────────────────────────────────────────────────────────────
 _FACULTY_DATA: List[Dict] = []
+_CIRCULARS: List[Dict] = []
 
 def load_faculty_data():
     global _FACULTY_DATA
     if os.path.exists("aids_faculty_data.json"):
         with open("aids_faculty_data.json", "r", encoding="utf-8") as f:
             _FACULTY_DATA = json.load(f)
+
+def load_circulars():
+    global _CIRCULARS
+    if os.path.exists("nbkr_circulars.json"):
+        with open("nbkr_circulars.json", "r", encoding="utf-8") as f:
+            _CIRCULARS = json.load(f)
+        print(f"✓ Circulars loaded: {len(_CIRCULARS)} notices")
 
 _DESIG_ORDER = {"head of the department":0,"professor":1,
                 "associate professor":2,"assistant professor":3}
@@ -371,6 +396,92 @@ def build_specialization_table(spec_label, faculty_list):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Circular HTML builder
+# ─────────────────────────────────────────────────────────────────────────────
+def build_circular_card(c: Dict) -> str:
+    """Render a single circular as a structured HTML card."""
+    cid    = c.get("id", "—")
+    date   = c.get("date", "—")
+    title  = c.get("title", "Notice")
+    content= c.get("content", "")
+    portal = c.get("payment_portal", "")
+    kd     = c.get("key_dates", {})
+    applic = c.get("applicable_to", "")
+
+    # Key dates rows
+    kd_rows = ""
+    if kd.get("class_commencement"):
+        kd_rows += f'<tr style="background:#fff8e1"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#e65100;width:200px">📅 Class Commencement</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#e65100">{kd["class_commencement"]}</td></tr>'
+    if kd.get("early_bird_deadline"):
+        kd_rows += f'<tr style="background:#e8f5e9"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#2e7d32">🎯 Early Bird Deadline</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#2e7d32">{kd["early_bird_deadline"]} — {kd.get("early_bird_discount","10%")} discount</td></tr>'
+
+    portal_row = ""
+    if portal:
+        portal_row = f'<tr><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">🌐 Payment Portal</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px"><a href="{portal}" style="color:#667eea">{portal}</a></td></tr>'
+
+    applic_row = ""
+    if applic:
+        applic_row = f'<tr style="background:#f8f9ff"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">👥 Applicable To</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{applic}</td></tr>'
+
+    return f"""
+<div style="margin:8px 0;font-family:'Segoe UI',sans-serif">
+  <div style="background:linear-gradient(135deg,#e65100,#bf360c);color:#fff;padding:10px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
+    <b>📢 {title}</b>
+    <span style="font-size:11px;opacity:.85">No. {cid} &nbsp;|&nbsp; {date}</span>
+  </div>
+  <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="background:#fff3e0"><td colspan="2" style="border:1px solid #ddd;padding:10px 14px;font-size:13px;color:#333;line-height:1.6">{content}</td></tr>
+      {kd_rows}
+      {applic_row}
+      {portal_row}
+      <tr style="background:#f8f9ff"><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#555">📝 Action Required</td><td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">Pay fee via portal &amp; submit fund transfer details at college office to collect receipt.</td></tr>
+    </table>
+  </div>
+</div>"""
+
+
+def build_all_circulars_table() -> str:
+    """Render all circulars as a summary table."""
+    if not _CIRCULARS:
+        return _info_card("📢 Circulars & Announcements", [
+            ("Status", "No circulars available at this time."),
+        ])
+
+    rows = ""
+    for i, c in enumerate(_CIRCULARS):
+        bg = "#f8f9ff" if i % 2 == 0 else "#fff"
+        rows += (f'<tr style="background:{bg}">'
+                 f'<td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;text-align:center">{i+1}</td>'
+                 f'<td style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;color:#e65100">{c.get("id","—")}</td>'
+                 f'<td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{c.get("date","—")}</td>'
+                 f'<td style="border:1px solid #ddd;padding:9px 14px;font-size:13px">{c.get("title","—")}</td>'
+                 f'</tr>')
+
+    return f"""
+<div style="margin:8px 0;font-family:'Segoe UI',sans-serif">
+  <div style="background:linear-gradient(135deg,#e65100,#bf360c);color:#fff;padding:10px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
+    <b>📢 NBKR Circulars &amp; Announcements</b>
+    <span style="font-size:11px;opacity:.85">{len(_CIRCULARS)} Notice(s)</span>
+  </div>
+  <div style="overflow-x:auto;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+      <thead><tr style="background:#fff3e0">
+        <th style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;text-align:center;width:50px">S.No</th>
+        <th style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;text-align:left">Notice No.</th>
+        <th style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;text-align:left">Date</th>
+        <th style="border:1px solid #ddd;padding:9px 14px;font-size:13px;font-weight:700;text-align:left">Subject</th>
+      </tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+  </div>
+  <p style="font-size:11px;color:#888;margin-top:5px;font-family:Segoe UI,sans-serif">
+    Ask "show circular B-10/2026/01" or "fee notice" for full details.
+  </p>
+</div>"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Knowledge base loading
 # ─────────────────────────────────────────────────────────────────────────────
 def load_knowledge_base() -> List[Dict]:
@@ -412,6 +523,16 @@ def load_knowledge_base() -> List[Dict]:
                 for key, val in json.load(f).items():
                     if val and str(val).strip():
                         docs.append({"text":f"{key}: {val}","type":"knowledge","key":key})
+
+    # Load circulars
+    if os.path.exists("nbkr_circulars.json"):
+        with open("nbkr_circulars.json","r",encoding="utf-8") as f:
+            for c in json.load(f):
+                text = (f"Circular {c.get('id','')} dated {c.get('date','')}: "
+                        f"{c.get('title','')}. {c.get('content','')}")
+                docs.append({"text": text, "type": "circular",
+                             "id": c.get("id",""), "date": c.get("date",""),
+                             "title": c.get("title",""), "data": c})
 
     print(f"✓ Knowledge base: {len(docs)} documents loaded")
     return docs
@@ -1009,8 +1130,9 @@ def _info_card(title: str, rows: List[Tuple[str,str]]) -> str:
 
 def _help_table() -> str:
     rows = [
-        ("📅 Timetables",  "Section A/B/C/D weekly schedules, single-day, subject-wise"),
+        ("📅 Timetables",  "1st/2nd/3rd Year Section A/B/C/D weekly schedules"),
         ("👥 Faculty",     "Names, designations, specializations, qualifications"),
+        ("📢 Circulars",   "Notices, announcements, fee circulars — try: 'show circulars'"),
         ("💻 Services",    "Attendance, e-journals, assessments, portal login"),
         ("📚 Academics",   "Courses, admissions, exams, library, hostel"),
         ("🏢 About NBKR",  "Institute overview, departments, facilities"),
@@ -1032,8 +1154,9 @@ def get_response(query: str, conn_id: str = "default") -> str:
     # ── Static intents ────────────────────────────────────────────────────
     if intent == "greeting":
         return _info_card("👋 Hello! I'm the NBKR AI &amp; DS Assistant", [
-            ("📅 Timetables", 'Try: "Show Section A timetable"'),
+            ("📅 Timetables", 'Try: "2nd year Section A timetable"'),
             ("👥 Faculty",    'Try: "Who is the HOD?"'),
+            ("📢 Circulars",  'Try: "Show circulars" or "fee notice"'),
             ("💻 Services",   'Try: "How to check attendance?"'),
             ("💡 Tip",        "I'll tell you honestly if I don't know something."),
         ])
@@ -1046,6 +1169,27 @@ def get_response(query: str, conn_id: str = "default") -> str:
 
     if intent == "help":
         return _help_table()
+
+    # ── Circulars / Announcements ─────────────────────────────────────────
+    if intent == "circulars":
+        q_lower = query.lower()
+        # Specific circular by ID
+        for c in _CIRCULARS:
+            if c.get("id","").lower() in q_lower:
+                return build_circular_card(c)
+        # Latest circular
+        if any(w in q_lower for w in ["latest","recent","new","last","current"]):
+            if _CIRCULARS:
+                return build_circular_card(_CIRCULARS[-1])
+        # Fee / early bird / commencement specific
+        if any(w in q_lower for w in ["fee","tuition","early bird","payment","pay",
+                                       "commencement","start","enrolment","enroll"]):
+            for c in _CIRCULARS:
+                if any(k in c.get("content","").lower()
+                       for k in ["fee","tuition","early bird","commencement"]):
+                    return build_circular_card(c)
+        # Default: show all circulars table
+        return build_all_circulars_table()
 
     # ── Timetable — direct handler, no RAG ───────────────────────────────
     if intent == "timetable":
@@ -1108,6 +1252,7 @@ async def lifespan(app: FastAPI):
     train_ml_classifier()
     load_timetable_data()
     load_faculty_data()
+    load_circulars()
     ok = initialize_rag()
     print("✓ RAG ready" if ok else "⚠ RAG unavailable — check data files")
     print("=" * 70)
