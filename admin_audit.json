@@ -1,0 +1,14 @@
+[
+  {
+    "ts": "2026-05-19T17:03:19.956541",
+    "user": "admin",
+    "action": "LOGIN",
+    "detail": ""
+  },
+  {
+    "ts": "2026-05-19T17:04:18.867200",
+    "user": "admin",
+    "action": "ADD_TEXT",
+    "detail": "title=exam schedule 2026-11-01, chunks=1, vectors=0"
+  }
+]
