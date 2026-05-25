@@ -1,4 +1,4 @@
-# 🎓 NBKR Institute AI & DS Department Chatbot
+# 🎓 NBKR Institute AI & DS Department RAG Chatbot
 
 An intelligent chatbot for the **AI & Data Science Department** at NBKR Institute of Science & Technology, powered by **RAG (Retrieval-Augmented Generation)** + **NLP (spaCy)**.
 
@@ -29,7 +29,7 @@ An intelligent chatbot for the **AI & Data Science Department** at NBKR Institut
 
 ---
 
-## 📦 Installation
+## 📦 Installation Steps
 
 ```bash
 # 1. Clone the repository
@@ -69,7 +69,7 @@ python main_scraper.py
 This will:
 1. Scrape faculty data from NBKR IRINS portal
 2. Scrape main website content
-3. Extract PDF documents
+3. Extract PDF  documents
 4. Scrape student portal
 5. Clean and preprocess all data
 6. Build ChromaDB vector embeddings
