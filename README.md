@@ -21,7 +21,7 @@ An intelligent chatbot for the **AI & Data Science Department** at NBKR Institut
 ## ✨ Features
 
 - 📅 **Timetable** — Section A/B/C/D weekly schedules in structured table format
-- 👥 **Faculty** — Numbered table with name, designation badge, specialization
+- 👥 **Faculty Data** — Numbered table with name, designation badge, specialization
 - 🔍 **RAG Search** — FAISS cosine similarity retrieval with confidence scoring
 - 🧠 **NLP Pipeline** — Lemmatisation, POS tagging, NER, query expansion
 - 🤷 **Honest fallback** — Says "I don't know" when confidence is low
